@@ -1,0 +1,36 @@
+# Dandelion Performance Config - 5.x features backported to 4.19
+# Apply after blossom_defconfig or stock_defconfig + NR_CPUS=8 fragment
+
+# === I/O Scheduler ===
+CONFIG_IOSCHED_BFQ=y
+CONFIG_BFQ_GROUP_IOSCHED=y
+CONFIG_DEFAULT_BFQ=y
+
+# === Async I/O ===
+CONFIG_IO_URING=y
+
+# === Memory Management ===
+CONFIG_KSM=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+CONFIG_ZRAM_WRITEBACK=y
+CONFIG_ZRAM_DEF_COMP_ZSTD=y
+CONFIG_MEMORY_HOTPLUG=y
+
+# === CPU Scheduler ===
+CONFIG_SCHED_AUTOGROUP=y
+CONFIG_UCLAMP_TASK=y
+CONFIG_UCLAMP_TASK_GROUP=y
+CONFIG_HZ_1000=y
+
+# === Pressure Stall Information ===
+CONFIG_PSI=y
+
+# === Task Accounting ===
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_IO_ACCOUNTING=y
+CONFIG_TASK_XACCT=y
+
+# === Debug (for perf analysis) ===
+CONFIG_DEBUG_KERNEL=y
+CONFIG_KALLSYMS_ALL=y
