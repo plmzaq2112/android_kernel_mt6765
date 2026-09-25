@@ -544,6 +544,26 @@ char *strim(char *s)
 }
 EXPORT_SYMBOL(strim);
 
+
+#ifndef __HAVE_ARCH_WCSLEN
+/**
+ * wcslen - Find the length of a wide-character string
+ * @s: The string to be sized
+ *
+ * Provided for clang loop-idiom transforms that emit calls to wcslen
+ * (e.g. cifs UniStrnlen). arm64 wchar_t is unsigned short.
+ */
+size_t wcslen(const unsigned short *s)
+{
+	const unsigned short *sc;
+
+	for (sc = s; *sc != 0; ++sc)
+		/* nothing */;
+	return sc - s;
+}
+EXPORT_SYMBOL(wcslen);
+#endif
+
 #ifndef __HAVE_ARCH_STRLEN
 /**
  * strlen - Find the length of a string

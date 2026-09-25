@@ -136,8 +136,10 @@ void __init ksu_syscall_hook_manager_init(void)
     pr_info("hook_manager: ksu_hook_manager_init called\n");
 
 #ifdef CONFIG_KRETPROBES
-    syscall_regfunc_rp = init_kretprobe("syscall_regfunc", syscall_regfunc_handler);
-    syscall_unregfunc_rp = init_kretprobe("syscall_unregfunc", syscall_unregfunc_handler);
+    // KSU-BOOTFIX: skip syscall_regfunc kretprobe (crashes early boot)
+    syscall_regfunc_rp = NULL;
+    // KSU-BOOTFIX: skip syscall_unregfunc kretprobe (crashes early boot)
+    syscall_unregfunc_rp = NULL;
 #endif
 
     // Register syscall hooks via dispatcher
@@ -148,25 +150,12 @@ void __init ksu_syscall_hook_manager_init(void)
     ksu_register_syscall_hook(__NR_newfstatat, ksu_hook_newfstatat);
     ksu_register_syscall_hook(__NR_faccessat, ksu_hook_faccessat);
 
-#if defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS) && defined(CONFIG_FTRACE_SYSCALLS)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
-    ret = register_trace_prio_sys_enter(ksu_sys_enter_handler, NULL, INT_MIN);
-#else
-    ret = register_trace_sys_enter(ksu_sys_enter_handler, NULL);
-#endif
-#ifndef CONFIG_KRETPROBES
-    ksu_mark_running_process_locked();
-#endif
-    if (ret) {
-        pr_err("hook_manager: failed to register sys_enter tracepoint: %d\n", ret);
-    } else {
-        pr_info("hook_manager: sys_enter tracepoint registered\n");
-    }
+#if 0 // KSU-BOOTFIX: sys_enter tracepoint disabled, use direct patch
+    register_trace_sys_enter(ksu_sys_enter_handler, NULL);
 #endif
 
-#if !defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS) || !defined(CONFIG_FTRACE_SYSCALLS)
-    // No sys_enter tracepoint available: patch the real syscall table slots so
-    // hooks are reached without ftrace/kprobes.
+#if 1 // KSU-BOOTFIX: force direct syscall table patch (tracepoint disabled)
+    // hooks are reached via patched syscall slots, avoiding early-boot panic
     ksu_direct_patch_syscalls();
 #endif
 
