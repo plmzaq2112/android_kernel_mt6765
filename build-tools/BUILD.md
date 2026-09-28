@@ -8,6 +8,11 @@
 - 分支：`main`（4.19.325 / 无 root）；升级前状态保留在 `archive/pre-325`
 - 实测环境：Ubuntu + WSL2，LLVM/Clang 18，Redmi 9A 实机（Android 16 / API 36）
 
+> **只想刷镜像、不需要改源码？**
+> 直接去 [Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases) 下载
+> 已实机验证的 `boot.img`（当前 **v2.0** = `boot-4.19.325-dandelion-perf.img`），
+> sha256 与分段 md5 见 release notes。下面的流程是给要改配置、改代码的人看的。
+
 ---
 
 ## 1. 环境要求
@@ -245,7 +250,8 @@ print("compiler  =", b"clang version" in dec)
 PY
 
 # 无 root：不要在镜像里 grep 字符串（kallsyms 压缩，会假阴性），看符号表
-grep -ciE '\bksu' out/System.map          # 期望 0
+grep -cE '\bksu' out/System.map          # 期望 0
+grep -ic kernelsu out/System.map         # 期望 0
 grep -E '^# CONFIG_KSU is not set' out/.config
 ```
 
@@ -254,6 +260,9 @@ grep -E '^# CONFIG_KSU is not set' out/.config
 - `uts_325` 必须为 `True` —— `linux_banner` 是普通字符串（不参与 kallsyms 压缩），
   这一条可以放心用字符串匹配。
 - `grep ksu` 必须是 **0** —— 见 §3.1 的踩坑提示，这只能用 `System.map` 判定。
+  **`\b` 不能省**：少了词首锚定，`ksu` 会匹配到 56 个 `checksum` / `chksum` 符号
+  （`ch`**`ksu`**`m`），把一台干净机器误报成"装了 KernelSU"。
+  实测：`grep -E '\bksu'` = 0，`grep -E 'ksu'` = 56 —— 差别全在 checksum。
 
 ---
 

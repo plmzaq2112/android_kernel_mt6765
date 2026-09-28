@@ -3,6 +3,7 @@
 
 [![kernel](https://img.shields.io/badge/kernel-4.19.325-brightgreen)](https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.19.325.tar.xz)
 [![device](https://img.shields.io/badge/device-Redmi%209A%20dandelion-blue)](https://wiki.lineageos.org/devices/dandelion/)
+[![release](https://img.shields.io/github/v/release/plmzaq2112/android_kernel_mt6765)](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
 [![license](https://img.shields.io/badge/license-GPL--2.0-lightgrey)](COPYING)
 [![root](https://img.shields.io/badge/root-none-important)](#不包含的内容)
 
@@ -11,7 +12,8 @@ Redmi 9A（联发科 Helio G25，平台代号 MT6765）的 Android 内核源码�
 即本仓库已包含 4.19 系列全部 325 次稳定更新。
 
 > **定位：性能取向 · SELinux 强制 · 默认无 root。**
-> 本仓库不提供预编译镜像，需自行编译刷入。
+> 源码是本体，推荐自行编译；[Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
+> 另提供已实机验证的 `boot.img`。
 
 ---
 
@@ -20,6 +22,7 @@ Redmi 9A（联发科 Helio G25，平台代号 MT6765）的 Android 内核源码�
 - [这个仓库是什么](#这个仓库是什么)
 - [特性](#特性)
 - [不包含的内容](#不包含的内容)
+- [下载镜像](#下载镜像)
 - [构建](#构建)
 - [打包与刷入](#打包与刷入)
 - [设备验证](#设备验证)
@@ -83,12 +86,38 @@ SELinux 退回 permissive —— 强制状态由内核配置和镜像 cmdline �
 
 - **不含任何 root 方案**：`CONFIG_KSU` 未定义（`# CONFIG_KSU is not set`），
   构建产物中没有 KernelSU 符号，`su` 不可用。本仓库就是"不 root 的日常内核"。
-- **不提供预编译镜像**：仓库没有 Release，`boot.img` 需自行编译 + 打包。
+- **预编译镜像不作担保**：[Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
+  里有已实机验证的 `boot.img`，但它只是**某一提交的快照**；
+  源码才是本体，改了配置或代码后请自行编译（见 [构建](#构建)）。
 - **未开启部分加固选项**：`FORTIFY_SOURCE`、`INIT_ON_ALLOC_DEFAULT_ON`、
   `INIT_ON_FREE_DEFAULT_ON`、`MODULE_SIG` 当前为未开启状态。
   本仓库的取舍是"稳定 + 性能 + SELinux 强制"，加固项可自行在 defconfig 中开启。
 - **NTFS3 未开启**（源码已在树内，`CONFIG_NTFS3_FS is not set`）。
 - 不针对非 dandelion 机型做适配。
+
+---
+
+## 下载镜像
+
+不想自行编译时，从 [Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
+取已在 Redmi 9A 实机开机验证过的 `boot.img`：
+
+| 版本 | 资产 | 说明 |
+|---|---|---|
+| **[v2.0](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v2.0)** | `boot-4.19.325-dandelion-perf.img` | 4.19.325 + BFQ 分层 / io_uring / KSM / PSI / UCLAMP，无 root、SELinux 强制 |
+| [v1.1](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.1) | `boot-4.19.275-perf-v2.img` | 4.19.275 干净基线（旧版） |
+| [v1.0](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.0) | `boot-4.19.275-full-v11.img` | 4.19.275 v11（旧版） |
+
+**v2.0 整包校验**
+
+```bash
+sha256sum boot-4.19.325-dandelion-perf.img
+# 264968c76e122c6dbd0b097b3ba72e3bbd2989ce0f77d8b2ba9635ca4fedf16a
+```
+
+kernel / ramdisk / dtb 的分段 md5 见 [v2.0 release notes](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v2.0)。
+镜像由同一套脚本产出——**仅替换 kernel**，ramdisk 与 dtb 继续沿用基底镜像，
+因此刷入前的备份与刷入步骤见 [`build-tools/BUILD.md`](build-tools/BUILD.md) 第 7 节。
 
 ---
 
@@ -229,7 +258,7 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|KSM|CONFIG_PSI=|UCLAMP|C
 
 ## 提交历史
 
-`main` 分支共 8 个提交，按时间顺序：
+`main` 分支的提交历史（按时间顺序，截至本文档更新时；不逐条列出日常小修）：
 
 | 提交 | 说明 |
 |---|---|
@@ -241,6 +270,9 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|KSM|CONFIG_PSI=|UCLAMP|C
 | `blossom_defconfig: no-root + performance features` | 关闭 KernelSU，开启 HZ=1000 / KSM / BFQ |
 | `chore: remove leftover backup files from tree` | 清理 37 个残留备份文件 |
 | `blossom_defconfig: enable BFQ hierarchical (per-cgroup) scheduling` | 开启 BFQ 分层调度 |
+| `build-tools: replace repack.py with pack_boot.py, add config assertion to one-shot build` | 打包脚本入库 + 配置断言接入一键构建 |
+| `docs: add README.md and rewrite build-tools guide` | 本 README 与构建指南 |
+| `docs: document v2.0 release and prebuilt image downloads` | 补充 Release 镜像下载与校验说明 |
 
 ---
 
@@ -274,7 +306,11 @@ running **Linux 4.19.325** — the final release of the 4.19 LTS series (2024-12
 upgraded from the 4.19.275 base this tree started at.
 
 **Positioning: performance-oriented, SELinux enforcing, no root by default.**
-No prebuilt images are published; build and pack it yourself.
+The source is the primary artifact — build and pack it yourself. Prebuilt,
+device-verified `boot.img` snapshots are published on
+[Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
+(currently **v2.0** = `boot-4.19.325-dandelion-perf.img`,
+sha256 `264968c7…fedf16a`).
 
 **Highlights** (all verified against `/proc/config.gz` on a live device):
 
