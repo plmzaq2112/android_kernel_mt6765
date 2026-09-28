@@ -146,9 +146,10 @@ out_blossom/
 /modules.order
 *.rej
 
-# v11ksu build artifacts
+# Local build artifacts
 out*/
 *.img
 *.log
-*.gz
-Module.symvers
+
+# Python bytecode cache
+__pycache__/
