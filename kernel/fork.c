@@ -67,6 +67,7 @@
 #include <linux/profile.h>
 #include <linux/rmap.h>
 #include <linux/ksm.h>
+#include <linux/simple_lmk.h>
 #include <linux/acct.h>
 #include <linux/userfaultfd_k.h>
 #include <linux/tsacct_kern.h>
