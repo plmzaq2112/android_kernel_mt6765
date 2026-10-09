@@ -484,16 +484,6 @@ struct clk *devm_clk_get_optional_prepared(struct device *dev, const char *id);
  */
 struct clk *devm_clk_get_optional_enabled(struct device *dev, const char *id);
 
-/**
- * devm_clk_get_optional - lookup and obtain a managed reference to an optional
- *			   clock producer.
- * @dev: device for clock "consumer"
- * @id: clock consumer ID
- *
- * Behaves the same as devm_clk_get() except where there is no clock producer.
- * In this case, instead of returning -ENOENT, the function returns NULL.
- */
-struct clk *devm_clk_get_optional(struct device *dev, const char *id);
 
 /**
  * devm_get_clk_from_child - lookup and obtain a managed reference to a
@@ -936,24 +926,6 @@ static inline struct clk *clk_get_optional(struct device *dev, const char *id)
 	return clk;
 }
 
-/**
- * clk_get_optional - lookup and obtain a reference to an optional clock
- *		      producer.
- * @dev: device for clock "consumer"
- * @id: clock consumer ID
- *
- * Behaves the same as clk_get() except where there is no clock producer. In
- * this case, instead of returning -ENOENT, the function returns NULL.
- */
-static inline struct clk *clk_get_optional(struct device *dev, const char *id)
-{
-	struct clk *clk = clk_get(dev, id);
-
-	if (clk == ERR_PTR(-ENOENT))
-		return NULL;
-
-	return clk;
-}
 
 #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
 struct clk *of_clk_get(struct device_node *np, int index);

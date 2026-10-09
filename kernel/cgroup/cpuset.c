@@ -2421,7 +2421,6 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 		rcu_read_unlock();
 	}
 
-	put_online_cpus();
 	/* rebuild sched domains if cpus_allowed has changed */
 	if (cpus_updated || force_rebuild) {
 		force_rebuild = false;
@@ -2445,7 +2444,6 @@ void cpuset_wait_for_hotplug(void)
 	flush_work(&cpuset_hotplug_work);
 }
 
-	put_online_cpus();
 /*
  * Keep top_cpuset.mems_allowed tracking node_states[N_MEMORY].
  * Call this routine anytime after node_states[N_MEMORY] changes.
