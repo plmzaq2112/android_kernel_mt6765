@@ -1568,7 +1568,7 @@ unsigned long reclaim_pages_from_list(struct list_head *page_list,
 		ClearPageActive(page);
 
 	nr_reclaimed = shrink_page_list(page_list, pgdat, &sc,
-					TTU_UNMAP | TTU_IGNORE_ACCESS,
+					TTU_IGNORE_ACCESS,
 					NULL, true);
 
 	while (!list_empty(page_list)) {
