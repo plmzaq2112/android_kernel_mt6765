@@ -1538,6 +1538,49 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
 }
 
 /*
+ * Reclaim a batch of pages isolated from the LRU by the per-process
+ * reclaim path (fs/proc/task_mmu.c).  Only @vma is unmapped so the
+ * caller's other mappings stay intact.  Pages the reclaimer could not
+ * free are put back onto the LRU; the list is empty on return.
+ */
+unsigned long reclaim_pages_from_list(struct list_head *page_list,
+				      struct vm_area_struct *vma)
+{
+	struct scan_control sc = {
+		.gfp_mask = GFP_KERNEL,
+		.priority = DEF_PRIORITY,
+		.may_writepage = 1,
+		.may_unmap = 1,
+		.may_swap = 1,
+		.target_vma = vma,
+	};
+	struct pglist_data *pgdat;
+	unsigned long nr_reclaimed;
+	struct page *page;
+
+	if (list_empty(page_list))
+		return 0;
+
+	page = lru_to_page(page_list);
+	pgdat = page_zone(page)->zone_pgdat;
+
+	list_for_each_entry(page, page_list, lru)
+		ClearPageActive(page);
+
+	nr_reclaimed = shrink_page_list(page_list, pgdat, &sc,
+					TTU_UNMAP | TTU_IGNORE_ACCESS,
+					NULL, true);
+
+	while (!list_empty(page_list)) {
+		page = lru_to_page(page_list);
+		list_del(&page->lru);
+		putback_lru_page(page);
+	}
+
+	return nr_reclaimed;
+}
+
+/*
  * Attempt to remove the specified page from its LRU.  Only take this page
  * if it is of the appropriate PageActive status.  Pages which are being
  * freed elsewhere are also ignored.
