@@ -1557,13 +1557,9 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 	cgroup_taskset_first(tset, &css);
 	cs = css_cs(css);
 
+	lockdep_assert_cpus_held();     /* see cgroup_attach_lock() */
 	mutex_lock(&cpuset_mutex);
 
-	/*
-	 * It should hold cpus lock because a cpu offline event can
-	 * cause set_cpus_allowed_ptr() failed.
-	 */
-	get_online_cpus();
 	/* prepare for attach */
 	if (cs == &top_cpuset)
 		cpumask_copy(cpus_attach, cpu_possible_mask);
@@ -1582,7 +1578,6 @@ static void cpuset_attach(struct cgroup_taskset *tset)
 		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
 		cpuset_update_task_spread_flag(cs, task);
 	}
-       put_online_cpus();
 
 	/*
 	 * Change mm for all threadgroup leaders. This is expensive and may
@@ -2040,6 +2035,7 @@ static int cpuset_css_online(struct cgroup_subsys_state *css)
 	if (!parent)
 		return 0;
 
+	get_online_cpus();
 	mutex_lock(&cpuset_mutex);
 
 	set_bit(CS_ONLINE, &cs->flags);
@@ -2077,6 +2073,7 @@ static int cpuset_css_online(struct cgroup_subsys_state *css)
 	cpuset_for_each_child(tmp_cs, pos_css, parent) {
 		if (is_mem_exclusive(tmp_cs) || is_cpu_exclusive(tmp_cs)) {
 			rcu_read_unlock();
+	put_online_cpus();
 			goto out_unlock;
 		}
 	}
@@ -2268,6 +2265,7 @@ hotplug_update_tasks_legacy(struct cpuset *cs,
 	if (is_empty)
 		remove_tasks_in_empty_cpuset(cs);
 
+	get_online_cpus();
 	mutex_lock(&cpuset_mutex);
 }
 
@@ -2282,6 +2280,7 @@ hotplug_update_tasks(struct cpuset *cs,
 		*new_mems = parent_cs(cs)->effective_mems;
 
 	spin_lock_irq(&callback_lock);
+	put_online_cpus();
 	cpumask_copy(cs->effective_cpus, new_cpus);
 	cs->effective_mems = *new_mems;
 	spin_unlock_irq(&callback_lock);
@@ -2309,6 +2308,7 @@ static void cpuset_hotplug_update_tasks(struct cpuset *cs)
 retry:
 	wait_event(cpuset_attach_wq, cs->attach_in_progress == 0);
 
+	get_online_cpus();
 	mutex_lock(&cpuset_mutex);
 
 	/*
@@ -2334,6 +2334,7 @@ retry:
 					    cpus_updated, mems_updated);
 
 	mutex_unlock(&cpuset_mutex);
+	put_online_cpus();
 }
 
 static bool force_rebuild;
@@ -2366,6 +2367,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 	bool cpus_updated, mems_updated;
 	bool on_dfl = is_in_v2_mode();
 
+	get_online_cpus();
 	mutex_lock(&cpuset_mutex);
 
 	/* fetch the available cpus/mems and find out which changed how */
@@ -2416,6 +2418,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 		rcu_read_unlock();
 	}
 
+	put_online_cpus();
 	/* rebuild sched domains if cpus_allowed has changed */
 	if (cpus_updated || force_rebuild) {
 		force_rebuild = false;
@@ -2429,6 +2432,7 @@ void cpuset_update_active_cpus(void)
 	 * We're inside cpu hotplug critical region which usually nests
 	 * inside cgroup synchronization.  Bounce actual hotplug processing
 	 * to a work item to avoid reverse locking order.
+	get_online_cpus();
 	 */
 	schedule_work(&cpuset_hotplug_work);
 }
@@ -2438,6 +2442,7 @@ void cpuset_wait_for_hotplug(void)
 	flush_work(&cpuset_hotplug_work);
 }
 
+	put_online_cpus();
 /*
  * Keep top_cpuset.mems_allowed tracking node_states[N_MEMORY].
  * Call this routine anytime after node_states[N_MEMORY] changes.
