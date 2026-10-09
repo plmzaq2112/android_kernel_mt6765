@@ -2421,6 +2421,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 		rcu_read_unlock();
 	}
 
+	put_online_cpus();
 	/* rebuild sched domains if cpus_allowed has changed */
 	if (cpus_updated || force_rebuild) {
 		force_rebuild = false;
