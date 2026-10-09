@@ -1287,10 +1287,10 @@ unsigned int uclamp_task(struct task_struct *p)
 {
 	unsigned long util;
 
+	util = task_util_est(p);
 #ifdef CONFIG_SCHED_TUNE
 	util += schedtune_task_margin(p);
 #endif
-	util = task_util_est(p);
 	util = max(util, uclamp_eff_value(p, UCLAMP_MIN));
 	util = min(util, uclamp_eff_value(p, UCLAMP_MAX));
 

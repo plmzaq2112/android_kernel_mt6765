@@ -2901,7 +2901,7 @@ static IMG_UINT32 _CleanCheckpointPool(_SYNC_CHECKPOINT_CONTEXT *psContext)
 	DLLIST_NODE *psThis, *psNext;
 	OS_SPINLOCK_FLAGS uiFlags;
 	IMG_UINT32 ui32ItemsFreed = 0;
-	IMG_BOOL bPoolValid;
+	IMG_BOOL bPoolValid = IMG_TRUE;
 #if (ENABLE_SYNC_CHECKPOINT_POOL_DEBUG == 1)
 	IMG_UINT32 ui32NullScpCount = 0, ui32PoolCount;
 #endif

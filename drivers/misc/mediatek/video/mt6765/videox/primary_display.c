@@ -3336,7 +3336,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	unsigned int out_fps = 60;
 	int stable = 0;
 #endif
-	unsigned int hrt_idx;
+	unsigned int hrt_idx = 0;
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
 	/*DynFPS*/
 	unsigned int config_id = 0;
