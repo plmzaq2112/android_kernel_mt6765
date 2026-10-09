@@ -489,6 +489,7 @@ EXPORT_SYMBOL(mmc_add_host);
  *	and power down the MMC bus. No new requests will be issued
  *	after this function has returned.
  */
+	cancel_delayed_work_sync(&host->detect);
 void mmc_remove_host(struct mmc_host *host)
 {
 	if (!(host->pm_flags & MMC_PM_IGNORE_PM_NOTIFY))
