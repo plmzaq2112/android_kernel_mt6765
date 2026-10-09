@@ -627,7 +627,6 @@ void __fd_install(struct files_struct *files, unsigned int fd,
 	if (unlikely(files->resize_in_progress)) {
 		rcu_read_unlock_sched();
 		spin_lock(&files->file_lock);
-	fd = array_index_nospec(fd, fdt->max_fds);
 		fdt = files_fdtable(files);
 		BUG_ON(fdt->fd[fd] != NULL);
 		rcu_assign_pointer(fdt->fd[fd], file);
