@@ -1809,7 +1809,7 @@ static int kvmppc_vcpu_run_pr(struct kvm_run *kvm_run, struct kvm_vcpu *vcpu)
 {
 	int ret;
 #ifdef CONFIG_ALTIVEC
-	unsigned long uninitialized_var(vrsave);
+	unsigned long vrsave;
 #endif
 
 	/* Check if we can run the vcpu at all */
