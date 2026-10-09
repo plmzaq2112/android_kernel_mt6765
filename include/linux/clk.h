@@ -752,11 +752,6 @@ static inline struct clk *devm_clk_get(struct device *dev, const char *id)
 	return NULL;
 }
 
-static inline struct clk *devm_clk_get_optional(struct device *dev,
-						const char *id)
-{
-	return NULL;
-}
 
 static inline struct clk *devm_clk_get_prepared(struct device *dev,
 						const char *id)
