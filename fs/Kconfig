@@ -321,4 +321,17 @@ source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
 source "fs/unicode/Kconfig"
 
+
+config IO_URING
+	bool "Enable io_uring uring support"
+	depends on BLOCK
+	help
+	  This option enables support for io_uring, a Linux-native
+	  io_uring interface.
+
+	  Improved throughput and efficiency for storage and networking,
+	  without the complexity and overhead of existing "aio" interface.
+
+	  If unsure, say N.
+
 endmenu

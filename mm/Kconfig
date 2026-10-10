@@ -308,6 +308,15 @@ config KSM
 	  until a program has madvised that an area is MADV_MERGEABLE, and
 	  root has set /sys/kernel/mm/ksm/run to 1 (if CONFIG_SYSFS is set).
 
+config SECRETMEM
+	bool "Enable memfd_secret() system call"
+	default y
+	help
+	  Provide a system call to create "secret" mappings backed by a
+	  file descriptor. The file descriptor is backed by an inode in a
+	  pseudo-filesystem and the memory is not accessible from the
+	  kernel's direct mapping.
+
 config DEFAULT_MMAP_MIN_ADDR
         int "Low address space to protect from user allocation"
 	depends on MMU

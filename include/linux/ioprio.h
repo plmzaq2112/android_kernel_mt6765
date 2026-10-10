@@ -75,6 +75,15 @@ static inline int task_nice_ioclass(struct task_struct *task)
  */
 extern int ioprio_best(unsigned short aprio, unsigned short bprio);
 
+static inline int get_current_ioprio(void)
+{
+	struct io_context *ioc = current->io_context;
+
+	if (ioc)
+		return ioc->ioprio;
+	return IOPRIO_PRIO_VALUE(IOPRIO_CLASS_NONE, 0);
+}
+
 extern int set_task_ioprio(struct task_struct *task, int ioprio);
 
 #ifdef CONFIG_BLOCK

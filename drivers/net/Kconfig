@@ -1,3 +1,4 @@
+source "drivers/net/wireguard/Kconfig"
 #
 # Network device configuration
 #
