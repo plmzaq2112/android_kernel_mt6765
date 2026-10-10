@@ -213,19 +213,21 @@ bash build-tools/check_config.sh out/.config
 
 脚本会检查：
 
-- **必须开启**（`must_y`，43 项）：BFQ 三件套、io_uring、KSM、PSI、UCLAMP、
-  SECRETMEM、WireGuard、PREEMPT、SELinux 默认强制，以及
+- **必须开启**（`must_y`，45 项）：BFQ 三件套、io_uring、KSM、PSI、UCLAMP、
+  BBR/FQ、KALLSYMS_BASE_RELATIVE、SECRETMEM、WireGuard、PREEMPT、SELinux 默认强制，以及
   **fix11 的两处不变量** —— TEE 全家 7 项、安全媒体链
   （`MTK_SEC_VIDEO_PATH_SUPPORT` / `MTK_DRM_KEY_MNG_SUPPORT` / `MTK_ION_SEC_HEAP` /
   `MTK_SECURE_MEM_SUPPORT` + trusted_mem 编入链 3 项）、`ARM64_SW_TTBR0_PAN`。
   本树为 built-in-only（不开 `MODULES`），旧线的模块钉子不适用
-- **必须关闭**（`must_n`，12 项）：`CONFIG_KSU` / `CONFIG_KSU_SUSFS`（无 root）、指纹/NFC 四项
+- **必须关闭**（`must_n`，14 项）：`CONFIG_KSU` / `CONFIG_KSU_SUSFS`（无 root）、指纹/NFC 四项
   （`MICROTRUST_FP_DRIVER` / `FPC_FINGERPRINT` / `FOCALTECH_FINGERPRINT` / `NFC`
   —— 前三项 Kconfig 是 `default y`，不显式写就自动开；`NFC` 实为 `default n`）、
   调试与性能损耗项（`KASAN` / `UBSAN` / `DEBUG_PREEMPT` / `DEBUG_INFO` /
-  `KALLSYMS_ALL`）、无用噪音（`IKHEADERS`）
-- **精确值**（`must_eq`，4 项）：`HZ=1000`、`HZ_1000=y`、
-  `MICROTRUST_TEE_VERSION="300"`、`DEFAULT_IOSCHED="bfq"`
+  `KALLSYMS_ALL`）、无用噪音（`IKHEADERS`）、
+  遗留拥塞控制（`TCP_CONG_BIC` / `TCP_CONG_WESTWOOD`，BBR+CUBIC 足够）
+- **精确值**（`must_eq`，5 项）：`HZ=1000`、`HZ_1000=y`、
+  `MICROTRUST_TEE_VERSION="300"`、`DEFAULT_IOSCHED="bfq"`、
+  `DEFAULT_TCP_CONG="bbr"`
 
 任何一项不符即返回非零退出码。**把它接在构建前**，可以避免编出一个"看起来
 成功、实际配置错了"的镜像。
@@ -423,7 +425,7 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|^CONFIG_KSM=|^CONFIG_PSI
 | `kernel/Makefile`（约 128 行） | `config_data.gz` 数据源改为 `$(objtree)/.config`，使 `/proc/config.gz` 显示真实构建配置（基线错误地压缩 `stock_defconfig`） |
 | `fs/io_uring.c` + `include/uapi/linux/io_uring.h` + `unistd` 425-427 | io_uring 移植（整合自 v2.0 线） |
 | `mm/secretmem.c` + `unistd` 447 | `memfd_secret` 移植（整合自 v2.0 线） |
-| `drivers/net/wireguard/` | WireGuard 移植（整合自 v2.0 线） |
+| `drivers/net/wireguard/` | WireGuard 移植（整合自 v2.0 线）。`compat/` 为承重移植层（Kbuild 无条件 include，垫 5.x API 到 4.19）；`tests/` 与 `dkms.conf` 为树外打包残留，已删 |
 | `block/Kconfig.iosched` | 新增 `DEFAULT_BFQ` 选项，BFQ 可设为默认调度器 |
 | `include/uapi/asm-generic/unistd.h` | io_uring 425-427、memfd_secret 447，`__NR_syscalls` 442→448 |
 | `include/linux/socket.h` + `net/socket.c` | `struct socket` 前置声明 + `__sys_sendmsg/recvmsg_sock`（clang 严格拒绝原型私有结构体） |
@@ -433,6 +435,10 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|^CONFIG_KSM=|^CONFIG_PSI
 | `mm/mmap.c` + `mm.h` | `mlock_future_check` 非静态化 |
 | `include/uapi/linux/magic.h` | `SECRETMEM_MAGIC` |
 | `drivers/tee/teei/300/tz_driver/sysfs.c` | `wake_up(&__wait_spi_wq)` 加 `FP_DRIVER` 守卫（基线漏守卫，FP 关闭时链接失败） |
+| `fs/io_uring.c`（`io_kiocb.creds` + `io_sq_wq_submit_work`） | io-wq 凭据修复：请求保存提交者凭据、工作线程 `override_creds`/`revert_creds`（5.3 快照缓冲写一律踢给内核线程，强制 SELinux 下被静默拒写；上游同款修法） |
+| `mm/secretmem.c`（`secretmem_enable`） | `memfd_secret` 默认开启（上游原为 opt-in，默认关则运行时 ENOSYS——旧线即如此，只验配置未验调用） |
+| `net/sched/sch_generic.c` + `net/sched/sch_fq.c` + `drivers/misc/mediatek/Kconfig.default` + defconfig | BBR+FQ 默认：`fq_qdisc_ops` 去 static、默认 qdisc 换 fq；移除 MTK `select TCP_CONG_BIC` 并关闭 BIC/WESTWOOD（厂商 init 强写 bic 无害失败，BBR 默认值生效） |
+| `arch/arm64/configs/blossom_defconfig` | 删除 `KALLSYMS_BASE_RELATIVE` 无解释关闭钉子（恢复 arm64 默认开） |
 
 > `build-tools/fix11.config` 是早期的配置片段，记录了 TEE / ION secure heap
 > 的**两处不变量**（这些选项**不可随意关闭**，否则会级联清掉 Keymaster / Widevine

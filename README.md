@@ -59,10 +59,10 @@ Redmi 9A（联发科 Helio G25，平台代号 MT6765）的 Android 内核源码�
 |---|---|---|
 | BFQ I/O 调度器（默认） | `CONFIG_DEFAULT_BFQ=y`、`CONFIG_IOSCHED_BFQ=y` | 用 BFQ 替代 mq-deadline 作为默认调度器，交互场景响应更好 |
 | BFQ 按 cgroup 分层 | `CONFIG_BFQ_GROUP_IOSCHED=y` | 每个 blkio cgroup 拥有独立的 BFQ 层级，后台应用的大量 I/O 不会饿死前台 |
-| io_uring | `CONFIG_IO_URING=y` | 高性能异步 I/O 接口（5.x 特性反向移植），减少系统调用开销 |
-| memfd_secret | `CONFIG_SECRETMEM=y` | `memfd_secret()` 系统调用（反向移植） |
+| io_uring | `CONFIG_IO_URING=y` | 高性能异步 I/O 接口（5.x 特性反向移植），减少系统调用开销。含凭据修复：强制 SELinux 下缓冲写不再被拒（读写/落盘/轮询/超时均经真机调用级测试） |
+| memfd_secret | `CONFIG_SECRETMEM=y` | `memfd_secret()` 系统调用（反向移植）。上游默认 opt-in，本树默认开启（否则运行时 ENOSYS）；用法为 `ftruncate` 后 mmap |
 | WireGuard | `CONFIG_WIREGUARD=y` | 内核态 WireGuard VPN（反向移植） |
-| BBR 拥塞控制 + FQ 队列 | `CONFIG_TCP_CONG_BBR=y`、`CONFIG_NET_SCH_FQ=y`、`CONFIG_DEFAULT_BBR=y` | 弱网吞吐/延迟更优；FQ 为默认 qdisc（本 ROM 厂商 init 会把拥塞控制改回 bic，BBR 保持可用） |
+| BBR 拥塞控制 + FQ 队列 | `CONFIG_TCP_CONG_BBR=y`、`CONFIG_NET_SCH_FQ=y`、`CONFIG_DEFAULT_BBR=y` | 默认拥塞控制 + 默认 qdisc，弱网吞吐/延迟更优。遗留 BIC/WESTWOOD 已移除，厂商 init 强写 bic 无害失败后 BBR 直接生效（实机 `tcp_congestion_control=bbr`） |
 | KSM | `CONFIG_KSM=y` | 内核同页合并，降低内存占用 |
 | PSI | `CONFIG_PSI=y` | 压力失量信息（CPU/内存/IO 压力可读） |
 | UCLAMP | `CONFIG_UCLAMP_TASK=y`、`CONFIG_UCLAMP_TASK_GROUP=y` | 调度器利用率钳制，可限制任务最高/最低算力档位 |
@@ -104,6 +104,7 @@ SELinux 退回 permissive —— 强制状态由内核配置和镜像 cmdline �
 
 | 版本 | 资产 | 说明 |
 |---|---|---|
+| **v2.2（当前）** | `boot-4.19.325-dandelion-llvm21.img` | LLVM 21 整合版：修复旧线三问题（memfd_secret ENOSYS / io_uring 写在强制 SELinux 下失效 / config.gz 数据源），BBR+FQ 默认，冗余清理 |
 | **[v2.1](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v2.1)** | `boot-4.19.325-dandelion-perf.img` | 4.19.325 + BFQ 分层 / io_uring / memfd_secret / KSM / PSI / UCLAMP，无 root、SELinux 强制 |
 | [v1.1](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.1) | `boot-4.19.275-perf-v2.img` | 4.19.275 干净基线（旧版） |
 | [v1.0](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.0) | `boot-4.19.275-full-v11.img` | 4.19.275 v11（旧版） |
@@ -200,6 +201,11 @@ adb shell "which su || echo su-absent"
 
 # 直接读取正在运行内核的配置（可确认特性确实编入）
 adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|SECRETMEM|WIREGUARD|KSM|CONFIG_PSI=|UCLAMP|CONFIG_HZ=|KSU'"
+
+# 拥塞控制与队列默认值（BBR + FQ）
+adb shell "cat /proc/sys/net/ipv4/tcp_congestion_control; cat /proc/sys/net/core/default_qdisc"
+#   bbr
+#   fq
 ```
 
 `/proc/config.gz` 是最可靠的核对手段：它来自内核自身嵌入的构建配置，
@@ -249,6 +255,12 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|SECRETMEM|WIREGUARD|KSM|
 `/proc/config.gz` 数据源、teei sysfs 守卫等前代修复一并移植（明细见
 [`build-tools/BUILD.md`](build-tools/BUILD.md) 第 9 节）。
 
+v2.2 起，两条线的整合从"代码并入"推进到"调用级实测"：逐项真机验证后修复了
+旧线自身也存在的三个隐藏问题——`memfd_secret` 因上游 opt-in 默认而运行时
+ENOSYS、io_uring 缓冲写在强制 SELinux 下被凭据问题全灭、`/proc/config.gz`
+嵌入的是 defconfig 而非真实 `.config`；同时启用 BBR+FQ 为默认网络栈并移除
+遗留拥塞控制（明细见 [`build-tools/BUILD.md`](build-tools/BUILD.md) 第 9 节）。
+
 前代项目（v1.x–v2.0 线）的完整历史、弃用清单与 GCC 已知问题，
 见 [docs/old-project.md](docs/old-project.md)。
 
@@ -291,9 +303,14 @@ backports, pack/assert tooling).
 Build with LLVM/Clang 21 + LLD (ThinLTO). Prebuilt, device-verified `boot.img`
 snapshots are published on
 [Releases](https://github.com/plmzaq2112/android_kernel_mt6765/releases)
-(currently **v2.1** = `boot-4.19.325-dandelion-perf.img`).
+(currently **v2.2** = `boot-4.19.325-dandelion-llvm21.img`).
 
-**Highlights** (verified against `/proc/config.gz` on a live device):
+v2.2 fixes three latent issues inherited from the old line (memfd_secret
+returning ENOSYS due to upstream's opt-in default, io_uring buffered writes
+failing under enforcing SELinux, and config.gz embedding the wrong file) and
+defaults to BBR + FQ.
+
+**Highlights** (verified on a live device, config + syscall level):
 
 | Feature | Config |
 |---|---|
@@ -305,6 +322,7 @@ snapshots are published on
 | Utilization clamping | `CONFIG_UCLAMP_TASK=y`, `CONFIG_UCLAMP_TASK_GROUP=y` |
 | 1000 Hz tick, preemptible kernel | `CONFIG_HZ=1000`, `CONFIG_PREEMPT=y` |
 | SELinux enforcing by default | `CONFIG_DEFAULT_SECURITY_SELINUX=y` |
+| BBR congestion control + FQ qdisc | `CONFIG_TCP_CONG_BBR=y`, `CONFIG_NET_SCH_FQ=y` |
 | **No root** | KernelSU absent (asserted by `check_config.sh`) |
 
 **Build / pack / flash**
