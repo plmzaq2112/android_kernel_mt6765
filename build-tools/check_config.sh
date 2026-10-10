@@ -31,7 +31,7 @@ must_y=(
     # 本树固定为 built-in（不开可加载模块）：V6 树 connectivity/Makefile 只在
     # WLAN_DRV_BUILD_IN=y 时编入 WiFi 驱动，开 MODULES 会破坏驱动编入链。
     # 这与旧线（v2.0 树 MODULES=y + 钉死 tristate）不同，勿照搬。
-    TCP_CONG_WESTWOOD TCP_CONG_BBR NET_SCH_FQ
+    TCP_CONG_BBR NET_SCH_FQ KALLSYMS_BASE_RELATIVE
     BATTERY_MT6357 SND_SOC_MT6357_ACCDET
     # 基础加固（已验证开启）
     STACKPROTECTOR_STRONG HARDENED_USERCOPY SLAB_FREELIST_HARDENED
@@ -66,6 +66,8 @@ must_n=(
     # dandelion 无指纹/NFC 硬件。前三项 Kconfig 为 default y, 不显式写就
     # 自动开; NFC 实为 default n, 这行只是冗余防御。
     MICROTRUST_FP_DRIVER FPC_FINGERPRINT FOCALTECH_FINGERPRINT NFC
+    # 遗留拥塞控制（default m 在无模块时被强转 y，必须显式关）
+    TCP_CONG_BIC TCP_CONG_WESTWOOD
     # 调试/性能损耗项
     KASAN UBSAN DEBUG_PREEMPT DEBUG_INFO KALLSYMS_ALL
     # 无用噪音
