@@ -5,7 +5,7 @@
 根目录的 [`README.md`](../README.md)。
 
 - 仓库：https://github.com/plmzaq2112/android_kernel_mt6765
-- 分支：`main`（4.19.325 / 无 root）；升级前状态保留在 `archive/pre-325`
+- 分支：`main`（4.19.325 / 无 root）；升级前状态保留在 `archive/4.19.275`
 - 实测环境：Ubuntu + WSL2，LLVM/Clang 21，Redmi 9A 实机（Android 16 / API 36）
 
 > **只想刷镜像、不需要改源码？**
