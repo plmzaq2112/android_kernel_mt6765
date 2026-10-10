@@ -62,6 +62,7 @@ Redmi 9A（联发科 Helio G25，平台代号 MT6765）的 Android 内核源码�
 | io_uring | `CONFIG_IO_URING=y` | 高性能异步 I/O 接口（5.x 特性反向移植），减少系统调用开销 |
 | memfd_secret | `CONFIG_SECRETMEM=y` | `memfd_secret()` 系统调用（反向移植） |
 | WireGuard | `CONFIG_WIREGUARD=y` | 内核态 WireGuard VPN（反向移植） |
+| BBR 拥塞控制 + FQ 队列 | `CONFIG_TCP_CONG_BBR=y`、`CONFIG_NET_SCH_FQ=y`、`CONFIG_DEFAULT_BBR=y` | 弱网吞吐/延迟更优；FQ 为默认 qdisc（本 ROM 厂商 init 会把拥塞控制改回 bic，BBR 保持可用） |
 | KSM | `CONFIG_KSM=y` | 内核同页合并，降低内存占用 |
 | PSI | `CONFIG_PSI=y` | 压力失量信息（CPU/内存/IO 压力可读） |
 | UCLAMP | `CONFIG_UCLAMP_TASK=y`、`CONFIG_UCLAMP_TASK_GROUP=y` | 调度器利用率钳制，可限制任务最高/最低算力档位 |
