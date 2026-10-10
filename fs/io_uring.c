@@ -47,6 +47,7 @@
 #include <linux/refcount.h>
 #include <linux/uio.h>
 #include <linux/sched/signal.h>
+#include <linux/cred.h>
 #include <linux/fs.h>
 #include <linux/file.h>
 #include <linux/fdtable.h>
@@ -329,6 +330,7 @@ struct io_kiocb {
 #define REQ_F_ISREG		2048	/* regular file */
 #define REQ_F_MUST_PUNT		4096	/* must be punted even for NONBLOCK */
 #define REQ_F_TIMEOUT_NOSEQ	8192	/* no timeout sequence */
+	const struct cred	*creds;
 	u64			user_data;
 	u32			result;
 	u32			sequence;
@@ -650,6 +652,7 @@ static struct io_kiocb *io_get_req(struct io_ring_ctx *ctx,
 	/* one is dropped after submission, the other at completion */
 	refcount_set(&req->refs, 2);
 	req->result = 0;
+	req->creds = get_current_cred();
 	return req;
 out:
 	percpu_ref_put(&ctx->refs);
@@ -669,6 +672,8 @@ static void __io_free_req(struct io_kiocb *req)
 {
 	if (req->file && !(req->flags & REQ_F_FIXED_FILE))
 		fput(req->file);
+	if (req->creds)
+		put_cred(req->creds);
 	percpu_ref_put(&req->ctx->refs);
 	kmem_cache_free(req_cachep, req);
 }
@@ -2151,6 +2156,7 @@ static void io_sq_wq_submit_work(struct work_struct *work)
 	struct async_list *async_list;
 	LIST_HEAD(req_list);
 	mm_segment_t old_fs;
+	const struct cred *old_cred;
 	int ret;
 
 	async_list = io_async_list_from_sqe(ctx, req->submit.sqe);
@@ -2178,6 +2184,7 @@ restart:
 		if (!ret) {
 			s->has_user = cur_mm != NULL;
 			s->needs_lock = true;
+			old_cred = override_creds(req->creds);
 			do {
 				ret = __io_submit_sqe(ctx, req, s, false);
 				/*
@@ -2190,6 +2197,7 @@ restart:
 					break;
 				cond_resched();
 			} while (1);
+			revert_creds(old_cred);
 		}
 
 		/* drop submission reference */
