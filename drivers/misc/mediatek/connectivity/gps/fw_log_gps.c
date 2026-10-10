@@ -239,7 +239,9 @@ static void gps_fw_log_exit(void)
 	}
 
 	pr_info("Unregistering chardev\n");
+#if 0
 	connsys_log_deinit(CONNLOG_TYPE_GPS);
+#endif
 	cdev_del(&logdevobj->chdev);
 	unregister_chrdev_region(logdevobj->devno, 1);
 	device_destroy(logdevobj->cls, logdevobj->devno);
