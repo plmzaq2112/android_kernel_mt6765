@@ -104,7 +104,7 @@ SELinux 退回 permissive —— 强制状态由内核配置和镜像 cmdline �
 
 | 版本 | 资产 | 说明 |
 |---|---|---|
-| **v2.2（当前）** | `boot-4.19.325-dandelion-llvm21.img` | LLVM 21 整合版：修复旧线三问题（memfd_secret ENOSYS / io_uring 写在强制 SELinux 下失效 / config.gz 数据源），BBR+FQ 默认，冗余清理 |
+| **[v2.2](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v2.2)**（当前） | `boot-4.19.325-dandelion-llvm21.img` | LLVM 21 整合版：修复旧线三问题（memfd_secret ENOSYS / io_uring 写在强制 SELinux 下失效 / config.gz 数据源），BBR+FQ 默认，冗余清理 |
 | **[v2.1](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v2.1)** | `boot-4.19.325-dandelion-perf.img` | 4.19.325 + BFQ 分层 / io_uring / memfd_secret / KSM / PSI / UCLAMP，无 root、SELinux 强制 |
 | [v1.1](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.1) | `boot-4.19.275-perf-v2.img` | 4.19.275 干净基线（旧版） |
 | [v1.0](https://github.com/plmzaq2112/android_kernel_mt6765/releases/tag/v1.0) | `boot-4.19.275-full-v11.img` | 4.19.275 v11（旧版） |

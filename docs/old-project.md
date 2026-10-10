@@ -13,8 +13,9 @@
 | v1.1 | 4.19.275 | `boot-4.19.275-perf-v2.img` | 关闭 root 的干净基线 |
 | v2.0 | 4.19.325 | `boot-4.19.325-dandelion-perf.img` | 与 vanilla 4.19.325 三方合并 + 性能特性；**GCC15 构建，后发现 WiFi 缺陷，tag 已从 GitHub 删除** |
 
-当前仓库的 **v2.1**（Latest）不属于旧线：它由当前树（Juggutsu 基线）用 Clang 18 构建，
-实机验证 WiFi 正常，取代 v2.0。
+当前仓库的 **v2.2**（Latest）不属于旧线：它由当前树（Juggutsu 基线）用 Clang 21 构建，
+在 v2.1（Clang 18，实机验证 WiFi 正常，取代 v2.0）的基础上修复了旧线三个隐藏问题
+（`memfd_secret` ENOSYS、io_uring 写在强制 SELinux 下失效、`config.gz` 数据源）并启用 BBR+FQ。
 
 旧线共 11 个提交，关键节点：
 
