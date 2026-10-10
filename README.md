@@ -28,6 +28,7 @@ Redmi 9A（联发科 Helio G25，平台代号 MT6765）的 Android 内核源码�
 - [设备验证](#设备验证)
 - [仓库结构](#仓库结构)
 - [血统与提交历史](#血统与提交历史)
+- [旧项目档案](docs/old-project.md)
 - [免责声明](#免责声明)
 - [许可](#许可)
 - [English summary](#english-summary)
@@ -246,6 +247,9 @@ adb shell "zcat /proc/config.gz | grep -E 'BFQ|IO_URING|SECRETMEM|WIREGUARD|KSM|
 `blossom_defconfig` 合并为单一 `blossom_defconfig`；
 `/proc/config.gz` 数据源、teei sysfs 守卫等前代修复一并移植（明细见
 [`build-tools/BUILD.md`](build-tools/BUILD.md) 第 9 节）。
+
+前代项目（v1.x–v2.0 线）的完整历史、弃用清单与 GCC 已知问题，
+见 [docs/old-project.md](docs/old-project.md)。
 
 ---
 
