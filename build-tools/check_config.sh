@@ -31,7 +31,8 @@ must_y=(
     # 本树固定为 built-in（不开可加载模块）：V6 树 connectivity/Makefile 只在
     # WLAN_DRV_BUILD_IN=y 时编入 WiFi 驱动，开 MODULES 会破坏驱动编入链。
     # 这与旧线（v2.0 树 MODULES=y + 钉死 tristate）不同，勿照搬。
-    TCP_CONG_WESTWOOD BATTERY_MT6357 SND_SOC_MT6357_ACCDET
+    TCP_CONG_WESTWOOD TCP_CONG_BBR NET_SCH_FQ
+    BATTERY_MT6357 SND_SOC_MT6357_ACCDET
     # 基础加固（已验证开启）
     STACKPROTECTOR_STRONG HARDENED_USERCOPY SLAB_FREELIST_HARDENED
     SLAB_FREELIST_RANDOM REFCOUNT_FULL SECCOMP
@@ -77,6 +78,7 @@ must_eq=(
     "HZ_1000=y"
     'MICROTRUST_TEE_VERSION="300"'
     'DEFAULT_IOSCHED="bfq"'
+    'DEFAULT_TCP_CONG="bbr"'
 )
 
 for c in "${must_y[@]}"; do
