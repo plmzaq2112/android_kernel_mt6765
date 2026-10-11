@@ -96,6 +96,10 @@ arch/*/include/generated
 
 # stgit generated dirs
 patches-*
+# 但 porting/patches-419-325 是移植补丁集,不是 stgit 产物
+!porting/patches-419-325/
+!porting/patches-419-325/**/*.xz
+!porting/patches-419-325/**/*.patch
 
 # quilt's files
 patches
