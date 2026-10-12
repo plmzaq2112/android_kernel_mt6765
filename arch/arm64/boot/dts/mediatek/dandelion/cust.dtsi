@@ -136,7 +136,7 @@
 	nfc_mtk:nfc@08 {
 		compatible = "mediatek,nfc";
 		reg = <0x08>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	ext_buck_lp4_mtk:ext_buck_lp4@57 {
@@ -471,7 +471,7 @@
 &irq_nfc {
 	interrupt-parent = <&pio>;
 	interrupts = <10 IRQ_TYPE_LEVEL_HIGH 10 0>;
-	status = "okay";
+	status = "disabled";
 };
 
 &chr_stat {

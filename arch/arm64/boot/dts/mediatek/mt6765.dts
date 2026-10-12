@@ -2776,10 +2776,12 @@ firmware_class.path=/vendor/firmware";
 			gpio-rst-std = <&pio 172 0x0>;
 			gpio-irq = <10>;
 			gpio-irq-std = <&pio 10 0x0>;
+			status = "disabled";
 		};
 
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
+		status = "disabled";
 	};
 
 	disp_mutex0: disp_mutex0@14001000 {
