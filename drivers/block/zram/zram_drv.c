@@ -33,6 +33,8 @@
 #include <linux/sysfs.h>
 #include <linux/debugfs.h>
 #include <linux/cpuhotplug.h>
+#include <linux/swap.h>
+#include <linux/delay.h>
 
 #include "zram_drv.h"
 
@@ -2152,6 +2154,97 @@ static void __exit zram_exit(void)
 {
 	destroy_devices();
 }
+
+/*
+ * Auto-configure zram as swap at boot.
+ * Enabled via kernel cmdline: zram.default_swap_mb=<size_in_MB>
+ *
+ * Phase 1 (late_initcall): set disksize directly via zram internals.
+ * Phase 2 (delayed work, ~15s later): mkswap + swapon via usermodehelper,
+ *   by which time Android has mounted /system.
+ */
+static unsigned int default_swap_mb;
+module_param(default_swap_mb, uint, 0444);
+MODULE_PARM_DESC(default_swap_mb,
+	"Auto-setup zram0 as swap with given size in MB (0=disabled)");
+
+static void zram_swap_enable_fn(struct work_struct *work)
+{
+	char *argv[] = {
+		"/system/bin/sh", "-c",
+		"/system/bin/mkswap /dev/block/zram0 > /dev/null 2>&1 && "
+		"/system/bin/swapon /dev/block/zram0",
+		NULL
+	};
+	char *envp[] = {
+		"HOME=/",
+		"PATH=/sbin:/system/bin:/system/xbin",
+		NULL
+	};
+
+	pr_info("zram: enabling swap on zram0\n");
+	call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+}
+
+static DECLARE_DELAYED_WORK(zram_swap_enable_work, zram_swap_enable_fn);
+
+static int __init zram_auto_swap_setup(void)
+{
+	struct zram *zram;
+	u64 disksize;
+
+	if (!default_swap_mb)
+		return 0;
+
+	/* phase 1: set disksize directly */
+	mutex_lock(&zram_index_mutex);
+	zram = idr_find(&zram_index_idr, 0);
+	mutex_unlock(&zram_index_mutex);
+
+	if (!zram) {
+		pr_err("zram: zram0 not found, auto-swap disabled\n");
+		return 0;
+	}
+
+	disksize = (u64)default_swap_mb << 20;
+	disksize = PAGE_ALIGN(disksize);
+
+	down_write(&zram->init_lock);
+	if (zram->disksize) {
+		pr_info("zram: zram0 already configured (%llu bytes), skipping\n",
+			zram->disksize);
+		up_write(&zram->init_lock);
+		return 0;
+	}
+
+	if (!zram_meta_alloc(zram, disksize)) {
+		pr_err("zram: failed to alloc meta for %llu bytes\n", disksize);
+		up_write(&zram->init_lock);
+		return 0;
+	}
+
+	zram->comp = zcomp_create(zram->compressor);
+	if (IS_ERR(zram->comp)) {
+		pr_err("zram: compressor init failed\n");
+		zram_meta_free(zram, disksize);
+		zram->comp = NULL;
+		up_write(&zram->init_lock);
+		return 0;
+	}
+
+	zram->disksize = disksize;
+	set_capacity(zram->disk, disksize >> SECTOR_SHIFT);
+	revalidate_disk(zram->disk);
+	up_write(&zram->init_lock);
+
+	pr_info("zram: zram0 disksize set to %llu MB\n",
+		disksize >> 20);
+
+	/* phase 2: schedule delayed swapon (15s, after Android boots) */
+	schedule_delayed_work(&zram_swap_enable_work, 15 * HZ);
+	return 0;
+}
+late_initcall(zram_auto_swap_setup);
 
 module_init(zram_init);
 module_exit(zram_exit);
