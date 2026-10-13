@@ -38,7 +38,6 @@ CFLAGS_sys_ni.o = $(DISABLE_LTO)
 endif
 
 # Don't instrument error handlers
-CFLAGS_cfi.o = $(DISABLE_CFI_CLANG)
 
 obj-y += sched/
 obj-y += locking/
@@ -106,7 +105,6 @@ obj-$(CONFIG_TRACEPOINTS) += trace/
 obj-$(CONFIG_IRQ_WORK) += irq_work.o
 obj-$(CONFIG_CPU_PM) += cpu_pm.o
 obj-$(CONFIG_BPF) += bpf/
-obj-$(CONFIG_CFI_CLANG) += cfi.o
 obj-$(CONFIG_SHADOW_CALL_STACK) += scs.o
 
 obj-$(CONFIG_PERF_EVENTS) += events/
@@ -133,11 +131,3 @@ targets += config_data.h
 $(obj)/config_data.h: $(obj)/config_data.gz FORCE
 	$(call filechk,ikconfiggz)
 
-$(obj)/kheaders.o: $(obj)/kheaders_data.tar.xz
-
-quiet_cmd_genikh = CHK     $(obj)/kheaders_data.tar.xz
-cmd_genikh = $(CONFIG_SHELL) $(srctree)/kernel/gen_kheaders.sh $@
-$(obj)/kheaders_data.tar.xz: FORCE
-	$(call cmd,genikh)
-
-clean-files := kheaders_data.tar.xz kheaders.md5
