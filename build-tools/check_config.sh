@@ -72,6 +72,16 @@ must_n=(
     KASAN UBSAN DEBUG_PREEMPT DEBUG_INFO KALLSYMS_ALL
     # 无用噪音
     IKHEADERS
+    # 本树固定为 built-in（见 must_y 内 WLAN_DRV_BUILD_IN 注释）。此前仅写在
+    # 注释里没有断言, 设备 running.config 派生的配置（MODULES=y）因此漏检。
+    MODULES
+    # defconfig 不得请求 ANDROID_SIMPLE_LMK：其 Kconfig 依赖 !PSI && !MEMCG,
+    # 而 MTK 树强制 select PSI、MEMCG=y, olddefconfig 会静默丢弃该行。
+    # 断言在此兜底：一旦依赖关系变动使其可能启用, 立即报警（本树钩子为空操作）。
+    ANDROID_SIMPLE_LMK
+    # 孤儿清理链(ed290516f→c0814d9b7)已从 Kconfig 删除下列符号; 此处断言防回归:
+    # 符号不存在时 .config 无对应行, 断言恒过; 若将来被重新引入并置 y, 立即报警。
+    CFI_CLANG ANDROID_VSOC
 )
 
 # 精确值
